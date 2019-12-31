@@ -15,7 +15,7 @@ Create Jenkins secrets with aws credentials:
  - sonarQubeToken with your Sonarqube token for login
 
  ### Configure Jenkins Kubernetes plugin:
-[Kubernetes-plugin-for-Jenkins] (https://github.com/jenkinsci/kubernetes-plugin)
+[Kubernetes-plugin-for-Jenkins](https://github.com/jenkinsci/kubernetes-plugin)
 Helpful link:
 [Creating-certificates](https://illya-chekrygin.com/2017/08/26/configuring-certificates-for-jenkins-kubernetes-plugin-0-12/)
 
