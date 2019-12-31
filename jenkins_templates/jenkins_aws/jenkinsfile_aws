@@ -123,8 +123,8 @@ containers: [
                 }
 
                 stage("Check rollout status") {
-                    sh "kubectl -n ${appDevNamespace} rollout status deployment ${devAppName}-vw-batch-chart"
-                    sh "kubectl -n ${appTestNamespace} rollout status deployment ${testAppName}-vw-batch-chart"
+                    sh "kubectl -n ${appDevNamespace} rollout status deployment dev-${appName}-${helmChartName}"
+                    sh "kubectl -n ${appTestNamespace} rollout status deployment test-${appName}-${helmChartName}"
                 }
             }
         }

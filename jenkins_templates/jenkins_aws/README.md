@@ -34,3 +34,4 @@ Configure kubectl to your cluster in your desire way. You can for example simply
 
 ### Create pipeline in Jenkins
 Create pipeline in Jenkins. This pipeline is suitable for multibranch pipeline and deploys app only for the master branch but you can configure it depending on your needs by for example deleting if statement
+
