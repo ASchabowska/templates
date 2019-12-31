@@ -5,20 +5,19 @@
 - Kubernetes cluster on AWS with:
    - [Tiller](https://helm.sh/docs/intro/install/) installed and configured 
 - Dockerfile for your app   
-Optional:
-- [Sonarqube](https://docs.sonarqube.org/latest/)
+- (Optional) [Sonarqube](https://docs.sonarqube.org/latest/)
 
 ### Configure Jenkins secrets:
 Create Jenkins secrets with aws credentials:
  - awsCred with ./aws/credentials file
- - awsConfig wih=th ./aws/config file
+ - awsConfig with ./aws/config file
  If you are using Sonarqube:
  - sonarQubeToken with your Sonarqube token for login
 
  ### Configure Jenkins Kubernetes plugin:
-    [Kubernetes plugin for Jenkins](https://github.com/jenkinsci/kubernetes-plugin)
-    Helpful link:
-    [Configuring certificates](https://illya-chekrygin.com/2017/08/26/configuring-certificates-for-jenkins-kubernetes-plugin-0-12/)
+[Kubernetes-plugin-for-Jenkins] (https://github.com/jenkinsci/kubernetes-plugin)
+Helpful link:
+[Creating-certificates](https://illya-chekrygin.com/2017/08/26/configuring-certificates-for-jenkins-kubernetes-plugin-0-12/)
 
 ### Create helm repository and docker registry
 Default for this template is AWS ECR for docker images and S3 for helm charts.
