@@ -1,0 +1,138 @@
+def appName = "[app-name]"
+def appDevNamespace = "dev-${appName}"
+def appTestNamespace = "test-${appName}"
+def dockerRegistry = "[docker-registry]"
+def label = "jnlp-${UUID.randomUUID().toString()}"
+def sonarQubeHost = "[sonar-host]"
+def helmRepository = "[helm-repo]"
+def helmChartName = "[helm-name]"
+def helmChartDir = "[helm-dir]"
+def nodeSelector = "[node-selector]"
+
+
+podTemplate(label: label, cloud: "kubernetes", 
+containers: [
+  containerTemplate(
+      name: 'aws-docker', 
+      image: 'aschabowska/aws-with-docker:v0.1', 
+      ttyEnabled: true, 
+      command: 'cat'),
+  containerTemplate(
+      name: 'openjdk', 
+      image: 'openjdk:8', 
+      ttyEnabled: true, 
+      command: 'cat')
+  ],
+  volumes: [
+      hostPathVolume(mountPath: "/var/run/docker.sock", hostPath: "/var/run/docker.sock"),
+      hostPathVolume(mountPath: "/root/.m2",  hostPath: '/root/.m2')
+  ]) {
+
+    node(label){
+        
+        checkout scm
+
+        container("openjdk"){
+            stage("Compile project"){
+                sh ""
+            }
+    
+            stage("Unit tests"){
+                sh ""                  
+            }
+
+            stage("Integration tests"){
+                sh ""
+            }
+
+            stage("SonarQube analysis"){
+                withCredentials([string(credentialsId: 'sonarqube', variable: 'sonarQubeToken')]) {
+                    withSonarQubeEnv('Sonarqube') {
+                        sh """
+                        ./mvnw sonar:sonar \
+                            -Dsonar.projectKey=[project-key] \
+                            -Dsonar.branch.name=${env.BRANCH_NAME} \
+                            -Dsonar.host.url=${sonarQubeHost} \
+                            -Dsonar.login=$sonarQubeToken
+                        """
+                    }
+                }
+            }   
+        }
+
+        container("aws-docker"){
+            stage("Build image"){
+                sh "docker build --network host -t ${appName}:latest -t ${appName}:${env.BUILD_NUMBER} ."
+                sh "docker tag ${appName}:latest ${dockerRegistry}/${appName}:latest"
+                sh "docker tag ${appName}:${env.BUILD_NUMBER} ${dockerRegistry}/${appName}:${env.BUILD_NUMBER}"
+            }
+
+            if(env.BRANCH_NAME=='master'){
+                stage ('Configure credentials') {
+                    sh "mkdir ~/.aws"
+                    sh "mkdir ~/.kube"
+                    withCredentials([file(credentialsId: 'awsCred', variable: 'credentials')]) {
+                        sh "cp $credentials ~/.aws/credentials"
+                    }
+                    withCredentials([file(credentialsId: 'awsConfig', variable: 'awsconfig')]) {
+                        sh "cp $awsconfig ~/.aws/config"
+                    }
+                    sh "\$(aws ecr get-login --no-include-email --region eu-west-1)"
+                }
+
+                stage ('Configure kubectl') {
+                    sh ""
+                }
+
+                stage("Push image"){
+                    sh "docker push ${dockerRegistry}/${appName}:latest"
+                    sh "docker push ${dockerRegistry}/${appName}:${env.BUILD_NUMBER}"
+                }
+
+                stage("Push helm charts"){
+                    sh """
+                        helm init --client-only
+                        helm plugin install https://github.com/hypnoglow/helm-s3.git
+                        helm repo add ${helmRepository} s3://${helmRepository}                               
+                        sed -i \"s/version.*/version: 0.0.${env.BUILD_NUMBER}/g\" ${helmChartDir}/Chart.yaml
+                        helm package ${helmChartDir}
+                        helm s3 push ${helmChartName}-0.0.${env.BUILD_NUMBER}.tgz ${helmRepository}
+                    """
+                }
+
+                stage("Helm install"){
+                    sh "helm repo update"
+                    sh """
+                        helm upgrade --install \
+                            dev-${appName} \
+                            --namespace ${appDevNamespace} \
+                            --version 0.0.${env.BUILD_NUMBER} \
+                            --set image.tag=${env.BUILD_NUMBER} \
+                            --set nodeSelector.${nodeSelector} \
+                            ${helmRepository}/${helmChartName}
+                    """
+                    sh """
+                        helm upgrade --install \
+                            test-${appName} \
+                            --namespace ${appTestNamespace} \
+                            --version 0.0.${env.BUILD_NUMBER} \
+                            --set image.tag=${env.BUILD_NUMBER} \
+                            --set nodeSelector.${nodeSelector} \
+                            ${helmRepository}/${helmChartName}
+                    """  
+                }
+
+                stage("Check rollout status") {
+                    sh "kubectl -n ${appDevNamespace} rollout status deployment ${devAppName}-vw-batch-chart"
+                    sh "kubectl -n ${appTestNamespace} rollout status deployment ${testAppName}-vw-batch-chart"
+                }
+            }
+        }
+        
+        container("openjdk"){
+            stage("E2E tests"){
+                sh ""  
+            }   
+        }
+    }
+}
