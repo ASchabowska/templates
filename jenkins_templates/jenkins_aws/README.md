@@ -24,7 +24,7 @@ Default for this template is AWS ECR for docker images and S3 for helm charts.
 If you wish to use different ones remember to adjust loging to your docker registry and push helm charts stage.
 
 ### Assign variables in Jenkinsfile
-At the top of the Jenkinsfile assign your values to the variables. By default this pipeline deploys on two environments dev and stage. Make sure to create this namespaces in your cluster. 
+At the top of the Jenkinsfile assign your values to the variables. By default this pipeline deploys on two environments dev and test. Make sure to create this namespaces in your cluster. 
 
 ### Tests
 If you wish to perform tests fill the appropiate stages with your integration, unit and e2e tests.
